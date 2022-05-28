@@ -24,6 +24,7 @@ type UpSessionBTC struct {
 
 	subAccount string
 	poolIndex  int
+	isExtraSession bool // CHANGED: this session needs to connect extra pool
 
 	downSessions    map[uint16]*DownSessionBTC
 	serverConn      net.Conn
@@ -52,6 +53,7 @@ type UpSessionBTC struct {
 	disconnectedMinerCounter int
 }
 
+// CHANGED: poolIndex >= len(manager.config.Pools) means extra pool
 func NewUpSessionBTC(manager *UpSessionManager, poolIndex int, slot int) (up *UpSessionBTC) {
 	up = new(UpSessionBTC)
 	up.manager = manager
@@ -64,8 +66,21 @@ func NewUpSessionBTC(manager *UpSessionManager, poolIndex int, slot int) (up *Up
 	up.eventChannel = make(chan interface{}, manager.config.Advanced.MessageQueueSize.PoolSession)
 	up.submitIDs = make(map[uint16]SubmitID)
 
+	// CHANGED: check extra session
+	if poolIndex >= len(manager.config.Pools) {
+		up.isExtraSession = true
+	} else {
+		up.isExtraSession = false
+	}
+	
 	if !up.config.MultiUserMode {
-		up.subAccount = manager.config.Pools[poolIndex].SubAccount
+		if up.isExtraSession  {
+			// Extra pool
+			up.poolIndex -= len(up.manager.config.Pools)
+			up.subAccount = BTCExtraPools[up.poolIndex].SubAccount
+		} else {
+			up.subAccount = manager.config.Pools[poolIndex].SubAccount
+		}
 	}
 
 	return
@@ -75,8 +90,15 @@ func (up *UpSessionBTC) Stat() AuthorizeStat {
 	return up.stat
 }
 
+// CHANGED: connect to extra pool if necessary
 func (up *UpSessionBTC) connect() {
-	pool := up.config.Pools[up.poolIndex]
+	var pool PoolInfo
+	if up.isExtraSession {
+		// extra session - connect to extra pool
+		pool = BTCExtraPools[up.poolIndex]
+	} else {
+		pool = up.config.Pools[up.poolIndex]
+	}
 	url := fmt.Sprintf("%s:%d", pool.Host, pool.Port)
 
 	if up.config.PoolUseTls {

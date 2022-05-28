@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/golang/glog"
@@ -34,6 +35,9 @@ type UpSessionManager struct {
 	initFailureCounter int
 
 	printingMinerNum bool
+
+	// CHANGED: IP filter for extra miners
+	extraRanges []IPRange
 }
 
 func NewUpSessionManager(subAccount string, config *Config, parent *SessionManager) (manager *UpSessionManager) {
@@ -42,7 +46,18 @@ func NewUpSessionManager(subAccount string, config *Config, parent *SessionManag
 	manager.config = config
 	manager.parent = parent
 
-	upSessions := make([]UpSessionInfo, manager.config.Advanced.PoolConnectionNumberPerSubAccount)
+	// parse filter for extra miners
+	manager.extraRanges = parseRange(BTCExtraFilter)
+
+	var upSessions []UpSessionInfo;
+	if manager.config.AgentType == "btc" {
+		// CHANGED: add more sessions for extra BTC pool
+		// 0..PoolConnectionNumberPerSubAccount -> original pool defined in agent_conf.json
+		// PoolConnectionNumberPerSubAccount.. -> extra pool defined in Const.go
+		upSessions = make([]UpSessionInfo, manager.config.Advanced.PoolConnectionNumberPerSubAccount * 2)
+	} else {
+		upSessions = make([]UpSessionInfo, manager.config.Advanced.PoolConnectionNumberPerSubAccount)
+	}
 	manager.upSessions = upSessions[:]
 	manager.fakeUpSession.upSession = manager.config.sessionFactory.NewFakeUpSession(manager)
 
@@ -64,7 +79,23 @@ func (manager *UpSessionManager) Run() {
 	manager.handleEvent()
 }
 
+// CHANGED: add extra slots to extra pool
 func (manager *UpSessionManager) connect(slot int) {
+	if slot > int(manager.config.Advanced.PoolConnectionNumberPerSubAccount) {
+		// Extra BTC pool
+		for i := range BTCExtraPools {
+			up := manager.config.sessionFactory.NewUpSession(manager, len(manager.config.Pools) + i, slot)
+			up.Init()
+	
+			if up.Stat() == StatAuthorized {
+				go up.Run()
+				manager.SendEvent(EventUpSessionReady{slot, up})
+				return
+			}
+		}
+		manager.SendEvent(EventUpSessionInitFailed{slot})
+		return 
+	}
 	for i := range manager.config.Pools {
 		up := manager.config.sessionFactory.NewUpSession(manager, i, slot)
 		up.Init()
@@ -82,13 +113,40 @@ func (manager *UpSessionManager) SendEvent(event interface{}) {
 	manager.eventChannel <- event
 }
 
+// CHANGE: check downsession ip address & assign extra pool if needed
 func (manager *UpSessionManager) addDownSession(e EventAddDownSession) {
 	defer manager.tryPrintMinerNum()
+
+	var isExtraMiner = false
+	if manager.config.AgentType == "btc" {
+		sess, _ := e.Session.(*DownSessionBTC)
+		ip := net.ParseIP(sess.clientConn.RemoteAddr().String())
+		if find(manager.extraRanges, ip) {
+			isExtraMiner = true
+		}
+	}
+
+	// check apply deadline of extra pool
+	deadline, _ := time.Parse(time.RFC1123, BTCExtraPoolApplyDeadline)
+	if time.Now().After(deadline) {
+		isExtraMiner = false
+	}
 
 	var selected *UpSessionInfo
 
 	// 寻找连接数最少的服务器
 	for i := range manager.upSessions {
+		if isExtraMiner {
+			// extra miner - skip original pools
+			if i < len(manager.config.Pools) {
+				continue
+			}
+		} else {
+			// original miner - skip extra pools
+			if i >= len(manager.config.Pools){
+				continue
+			}
+		}
 		info := &manager.upSessions[i]
 		if info.ready && (selected == nil || info.minerNum < selected.minerNum) {
 			selected = info
