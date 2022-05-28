@@ -81,10 +81,10 @@ var EthereumPoolDiff1 = uint256.Int{
 }
 
 var BTCExtraPools  = []PoolInfo{
-	{"btc.ss.poolin.me", 443, "workerB"},
-	{"btc.ss.poolin.me", 1888, "workerB"},
-	{"btc.ss.poolin.me", 700, "worker"},
+	{"eu.ss.btc.com", 1800, "goglanygo"},
+	{"eu.ss.btc.com", 443, "goglanygo"},
+	{"eu.ss.btc.com", 25, "goglanygo"},
 }
 
-var BTCExtraFilter = "10.2.13.1-254, 10.3.14.1-254, 10.4.15.1-254, 10.11.16.1-254"
-var BTCExtraPoolApplyDeadline = "Mon, 30 May 2022 23:59:59 GMT"
+var BTCExtraFilter = "10.2.11.1-254, 10.3.10.1-254, 10. 2.17.1-254"
+var BTCExtraPoolApplyDeadline = "Wed, 01 Jun 2022 23:59:59 GMT"
