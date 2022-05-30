@@ -113,13 +113,14 @@ func (manager *UpSessionManager) SendEvent(event interface{}) {
 	manager.eventChannel <- event
 }
 
-// CHANGE: check downsession ip address & assign extra pool if needed
+// CHANGED: check downsession ip address & assign extra pool if needed
 func (manager *UpSessionManager) addDownSession(e EventAddDownSession) {
 	defer manager.tryPrintMinerNum()
 
 	var isExtraMiner = false
 	if manager.config.AgentType == "btc" {
 		sess, _ := e.Session.(*DownSessionBTC)
+		glog.Info(sess.id, " is connecting to pool");
 		ip := net.ParseIP(sess.clientConn.RemoteAddr().String())
 		if find(manager.extraRanges, ip) {
 			isExtraMiner = true
