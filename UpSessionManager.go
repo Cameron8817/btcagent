@@ -121,6 +121,7 @@ func (manager *UpSessionManager) addDownSession(e EventAddDownSession) {
 	if manager.config.AgentType == "btc" {
 		sess, _ := e.Session.(*DownSessionBTC)
 		glog.Info(sess.id, " is connecting to pool");
+		glog.Info("Miner full name: ", sess.fullName);
 		ip := net.ParseIP(sess.clientConn.RemoteAddr().String())
 		if find(manager.extraRanges, ip) {
 			isExtraMiner = true
