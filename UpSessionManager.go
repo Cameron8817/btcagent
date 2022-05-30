@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -120,9 +121,27 @@ func (manager *UpSessionManager) addDownSession(e EventAddDownSession) {
 	var isExtraMiner = false
 	if manager.config.AgentType == "btc" {
 		sess, _ := e.Session.(*DownSessionBTC)
-		glog.Info(sess.id, " is connecting to pool");
-		glog.Info("Miner full name: ", sess.fullName);
-		ip := net.ParseIP(sess.clientConn.RemoteAddr().String())
+		glog.Info(sess.id, "is connecting to pool")
+
+		var ip net.IP
+		dotPos := strings.IndexByte(sess.fullName, '.')
+		if dotPos >= 0 {
+			ipStr := sess.fullName[dotPos + 1:]
+			ipStr = strings.Replace(ipStr, "x", ".", -1)
+			ip = net.ParseIP(ipStr)
+
+			if ip != nil {
+				glog.Info("Parsed ip address of ", sess.id, "is ", ip)
+			}
+		}
+
+		if ip == nil {
+			// failed to parse address from full name
+			// set ip address to remote address of client connection
+			ip = net.ParseIP(sess.clientConn.RemoteAddr().String())
+			glog.Info("Failed to parse ip address of ", sess.id, "- setting from remoteAddr() function ", ip)
+		}
+
 		if find(manager.extraRanges, ip) {
 			isExtraMiner = true
 		}
