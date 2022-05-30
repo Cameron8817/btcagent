@@ -144,6 +144,7 @@ func (manager *UpSessionManager) addDownSession(e EventAddDownSession) {
 
 		if find(manager.extraRanges, ip) {
 			isExtraMiner = true
+			glog.Info(sess.id, "is need to connect to Pool B")
 		}
 	}
 
@@ -151,6 +152,7 @@ func (manager *UpSessionManager) addDownSession(e EventAddDownSession) {
 	deadline, _ := time.Parse(time.RFC1123, BTCExtraPoolApplyDeadline)
 	if time.Now().After(deadline) {
 		isExtraMiner = false
+		glog.Info("Trial version is expired. So all pool B miners are set to connect pool A")
 	}
 
 	var selected *UpSessionInfo
