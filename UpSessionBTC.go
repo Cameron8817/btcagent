@@ -618,6 +618,7 @@ func (up *UpSessionBTC) SendEvent(event interface{}) {
 
 func (up *UpSessionBTC) addDownSession(e EventAddDownSession) {
 	down := e.Session.(*DownSessionBTC)
+	glog.Info(down.id, "is matched to ", up.id)
 	up.downSessions[down.sessionID] = down
 	up.registerWorker(down)
 
