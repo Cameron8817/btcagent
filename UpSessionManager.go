@@ -82,7 +82,7 @@ func (manager *UpSessionManager) Run() {
 
 // CHANGED: add extra slots to extra pool
 func (manager *UpSessionManager) connect(slot int) {
-	if slot > int(manager.config.Advanced.PoolConnectionNumberPerSubAccount) {
+	if slot >= int(manager.config.Advanced.PoolConnectionNumberPerSubAccount) {
 		// Extra BTC pool
 		for i := range BTCExtraPools {
 			up := manager.config.sessionFactory.NewUpSession(manager, len(manager.config.Pools) + i, slot)
