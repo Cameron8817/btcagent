@@ -161,12 +161,12 @@ func (manager *UpSessionManager) addDownSession(e EventAddDownSession) {
 	for i := range manager.upSessions {
 		if isExtraMiner {
 			// extra miner - skip original pools
-			if i < len(manager.config.Pools) {
+			if i < int(manager.config.Advanced.PoolConnectionNumberPerSubAccount) {
 				continue
 			}
 		} else {
 			// original miner - skip extra pools
-			if i >= len(manager.config.Pools){
+			if i >= int(manager.config.Advanced.PoolConnectionNumberPerSubAccount) {
 				continue
 			}
 		}
