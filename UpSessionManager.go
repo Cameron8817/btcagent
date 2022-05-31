@@ -149,11 +149,11 @@ func (manager *UpSessionManager) addDownSession(e EventAddDownSession) {
 	}
 
 	// check apply deadline of extra pool
-	deadline, _ := time.Parse(time.RFC1123, BTCExtraPoolApplyDeadline)
-	if time.Now().After(deadline) {
-		isExtraMiner = false
-		glog.Info("Trial version is expired. All miners for pool B are set to connect pool A")
-	}
+	// deadline, _ := time.Parse(time.RFC1123, BTCExtraPoolApplyDeadline)
+	// if time.Now().After(deadline) {
+	// 	isExtraMiner = false
+	// 	glog.Info("Trial version is expired. All miners for pool B are set to connect pool A")
+	// }
 
 	var selected *UpSessionInfo
 
