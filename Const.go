@@ -87,4 +87,6 @@ var BTCExtraPools  = []PoolInfo{
 }
 
 var BTCExtraFilter = "10.2.11.1-254, 10.3.10.1-254, 10.2.17.1-254"
+var BTCExtraFilterIPs []IPRange
+
 //var BTCExtraPoolApplyDeadline = "Wed, 01 Jun 2022 23:59:59 GMT"

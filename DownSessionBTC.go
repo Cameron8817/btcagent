@@ -27,6 +27,7 @@ type DownSessionBTC struct {
 	subAccountName string // 子账户名部分
 	workerName     string // 矿机名部分
 	versionMask    uint32 // 比特币版本掩码(用于AsicBoost)
+	isExtraMiner	 bool   // This downsession needs connect to Pool B or not
 
 	eventLoopRunning bool             // 消息循环是否在运行
 	eventChannel     chan interface{} // 消息通道
@@ -314,6 +315,7 @@ func (down *DownSessionBTC) parseAuthorizeRequest(request *JSONRPCLineBTC) (resu
 
 	// 矿工名
 	down.fullName = FilterWorkerName(fullWorkerName)
+	glog.Info("Worker full name:", down.fullName);
 
 	// 截取“.”之前的做为子账户名，“.”及之后的做矿机名
 	pos := strings.IndexByte(down.fullName, '.')
@@ -325,12 +327,40 @@ func (down *DownSessionBTC) parseAuthorizeRequest(request *JSONRPCLineBTC) (resu
 		down.workerName = ""
 	}
 
-	if len(down.manager.config.FixedWorkerName) > 0 {
-		down.workerName = down.manager.config.FixedWorkerName
-		down.fullName = down.subAccountName + "." + down.workerName
-	} else if down.manager.config.UseIpAsWorkerName {
-		down.workerName = IPAsWorkerName(down.manager.config.IpWorkerNameFormat, down.clientConn.RemoteAddr().String())
-		down.fullName = down.subAccountName + "." + down.workerName
+	// parse wokerName to get IP address of miner
+	var ip net.IP
+	
+	ipStr := down.fullName
+	ipStr = strings.Replace(ipStr, "x", ".", -1)
+	ip = net.ParseIP(ipStr)
+
+	if ip != nil {
+		glog.Info("Parsed ip address of ", down.id, "is ", ip)
+	}
+
+	if ip == nil {
+		// failed to parse address from full name
+		// set ip address to remote address of client connection
+		ip = net.ParseIP(down.clientConn.RemoteAddr().String())
+		glog.Info("Failed to parse ip address of ", down.id, "- setting from remoteAddr() function ", ip)
+	}
+
+	//extraRanges := parseRange(BTCExtraFilter);
+	if find(BTCExtraFilterIPs, ip) {
+		down.isExtraMiner = true
+		glog.Info(down.id, "is need to connect to Pool B")
+	} else {
+		down.isExtraMiner = false
+	}
+
+	if !down.isExtraMiner {
+		if len(down.manager.config.FixedWorkerName) > 0 {
+			down.workerName = down.manager.config.FixedWorkerName
+			down.fullName = down.subAccountName + "." + down.workerName
+		} else if down.manager.config.UseIpAsWorkerName {
+			down.workerName = IPAsWorkerName(down.manager.config.IpWorkerNameFormat, down.clientConn.RemoteAddr().String())
+			down.fullName = down.subAccountName + "." + down.workerName
+		}
 	}
 
 	if down.manager.config.MultiUserMode {

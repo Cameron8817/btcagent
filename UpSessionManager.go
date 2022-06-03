@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net"
-	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -38,7 +36,7 @@ type UpSessionManager struct {
 	printingMinerNum bool
 
 	// CHANGED: IP filter for extra miners
-	extraRanges []IPRange
+	//extraRanges []IPRange
 }
 
 func NewUpSessionManager(subAccount string, config *Config, parent *SessionManager) (manager *UpSessionManager) {
@@ -48,7 +46,7 @@ func NewUpSessionManager(subAccount string, config *Config, parent *SessionManag
 	manager.parent = parent
 
 	// parse filter for extra miners
-	manager.extraRanges = parseRange(BTCExtraFilter)
+	// manager.extraRanges = parseRange(BTCExtraFilter)
 
 	var upSessions []UpSessionInfo;
 	if manager.config.AgentType == "btc" {
@@ -121,31 +119,33 @@ func (manager *UpSessionManager) addDownSession(e EventAddDownSession) {
 	var isExtraMiner = false
 	if manager.config.AgentType == "btc" {
 		sess, _ := e.Session.(*DownSessionBTC)
-		glog.Info(sess.id, "is connecting to pool")
 
-		var ip net.IP
-		dotPos := strings.IndexByte(sess.fullName, '.')
-		if dotPos >= 0 {
-			ipStr := sess.fullName[dotPos + 1:]
-			ipStr = strings.Replace(ipStr, "x", ".", -1)
-			ip = net.ParseIP(ipStr)
+		isExtraMiner = sess.isExtraMiner
+		// glog.Info(sess.id, "is connecting to pool")
 
-			if ip != nil {
-				glog.Info("Parsed ip address of ", sess.id, "is ", ip)
-			}
-		}
+		// var ip net.IP
+		// dotPos := strings.IndexByte(sess.fullName, '.')
+		// if dotPos >= 0 {
+		// 	ipStr := sess.fullName[dotPos + 1:]
+		// 	ipStr = strings.Replace(ipStr, "x", ".", -1)
+		// 	ip = net.ParseIP(ipStr)
 
-		if ip == nil {
-			// failed to parse address from full name
-			// set ip address to remote address of client connection
-			ip = net.ParseIP(sess.clientConn.RemoteAddr().String())
-			glog.Info("Failed to parse ip address of ", sess.id, "- setting from remoteAddr() function ", ip)
-		}
+		// 	if ip != nil {
+		// 		glog.Info("Parsed ip address of ", sess.id, "is ", ip)
+		// 	}
+		// }
 
-		if find(manager.extraRanges, ip) {
-			isExtraMiner = true
-			glog.Info(sess.id, "is need to connect to Pool B")
-		}
+		// if ip == nil {
+		// 	// failed to parse address from full name
+		// 	// set ip address to remote address of client connection
+		// 	ip = net.ParseIP(sess.clientConn.RemoteAddr().String())
+		// 	glog.Info("Failed to parse ip address of ", sess.id, "- setting from remoteAddr() function ", ip)
+		// }
+
+		// if find(manager.extraRanges, ip) {
+		// 	isExtraMiner = true
+		// 	glog.Info(sess.id, "is need to connect to Pool B")
+		// }
 	}
 
 	// check apply deadline of extra pool

@@ -24,6 +24,9 @@ func main() {
 		flag.Lookup("log_dir").Value.Set(*logDir)
 	}
 
+	// Parse BTCExtraFilter to get IP ranges
+	BTCExtraFilterIPs = parseRange(BTCExtraFilter)
+
 	// 增大文件描述符上限
 	IncreaseFDLimit()
 
