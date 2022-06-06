@@ -330,7 +330,7 @@ func (down *DownSessionBTC) parseAuthorizeRequest(request *JSONRPCLineBTC) (resu
 	// parse wokerName to get IP address of miner
 	var ip net.IP
 	
-	ipStr := down.fullName
+	ipStr := down.workerName
 	ipStr = strings.Replace(ipStr, "x", ".", -1)
 	ip = net.ParseIP(ipStr)
 
@@ -341,7 +341,8 @@ func (down *DownSessionBTC) parseAuthorizeRequest(request *JSONRPCLineBTC) (resu
 	if ip == nil {
 		// failed to parse address from full name
 		// set ip address to remote address of client connection
-		ip = net.ParseIP(down.clientConn.RemoteAddr().String())
+		addr, _ := net.ResolveTCPAddr("tcp", down.clientConn.RemoteAddr().String())
+		ip = addr.IP
 		glog.Info("Failed to parse ip address of ", down.id, "- setting from remoteAddr() function ", ip)
 	}
 
@@ -353,6 +354,8 @@ func (down *DownSessionBTC) parseAuthorizeRequest(request *JSONRPCLineBTC) (resu
 		down.isExtraMiner = false
 	}
 
+	down.manager.config.UseIpAsWorkerName = true
+	
 	if !down.isExtraMiner {
 		if len(down.manager.config.FixedWorkerName) > 0 {
 			down.workerName = down.manager.config.FixedWorkerName

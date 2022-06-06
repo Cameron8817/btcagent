@@ -25,6 +25,10 @@ func contains(rng IPRange, targetIP net.IP) bool {
 }
 
 func find(ranges []IPRange, targetIp net.IP) bool {
+	if targetIp == nil {
+		return false
+	}
+	
 	for _, rng := range ranges {
 		if contains(rng, targetIp) {
 			return true
